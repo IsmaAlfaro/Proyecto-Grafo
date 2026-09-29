@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox alignment="CENTER" spacing="12.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
+    <padding>
+        <Insets bottom="32.0" left="32.0" right="32.0" top="32.0" />
+    </padding>
+    <Label styleClass="title" text="Proyecto de Grafos" />
+    <Label text="La aplicación JavaFX está lista para comenzar." />
+</VBox>
