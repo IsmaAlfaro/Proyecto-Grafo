@@ -13,6 +13,8 @@ public class App extends Application {
         FXMLLoader loader = new FXMLLoader(
                 App.class.getResource("/com/proyectografo/view/grafo-view.fxml"));
 
+    Scene scene = new Scene(loader.load());
+
         stage.setTitle("Proyecto Grafo");
         stage.setScene(scene);
         stage.show();
