@@ -27,13 +27,29 @@ public class GrafoPane extends Pane {
     private final Map<Integer, Group> nodosVisuales = new HashMap<>();
     private final Map<String, Group> conexionesVisuales = new HashMap<>();
 
-    public GrafoPane() {
-        setPrefSize(900, 520);
-        setStyle("-fx-background-color: #f8fafc;");
+    @FunctionalInterface
+    public interface AlCrearConexion{
+        void ejecutar (int origen, int destino, int peso);
     }
 
-    public int agregarNodo(double x, double y) {
-        int id = siguienteId++;
+    private AlCrearConexion alCrearConexion;
+
+    public void setAlCrearConexion(AlCrearConexion accion) {
+        alCrearConexion = accion;
+    }
+
+    public GrafoPane() {
+        setPrefSize(900, 520);
+        setStyle(
+                "-fx-background-color: #121418;"
+                        + "-fx-background-radius: 8;"
+                        + "-fx-border-color: #38352e;"
+                        + "-fx-border-radius: 8;"
+        );
+    }
+
+    public int agregarNodo(int id, double x, double y) {
+        siguienteId = Math.max(siguienteId, id + 1);
 
         // Mantener el nodo dentro del área de dibujo.
         double posicionX = Math.max(
@@ -47,11 +63,11 @@ public class GrafoPane extends Pane {
         );
 
         Circle circulo = new Circle(RADIO);
-        circulo.setFill(Color.web("#2563eb"));
-        circulo.setStroke(Color.web("#1e3a8a"));
+        circulo.setFill(Color.web("#343943"));
+        circulo.setStroke(Color.web("#d4af60"));
         circulo.setStrokeWidth(2);
 
-        // Internamente usamos 0, 1, 2...
+        // Internamente, usamos 0, 1, 2...
         // En pantalla mostramos 1, 2, 3...
         Text etiqueta = new Text(String.valueOf(id + 1));
         etiqueta.setFill(Color.WHITE);
@@ -82,7 +98,7 @@ public class GrafoPane extends Pane {
         if (nodoSeleccionado == null) {
             nodoSeleccionado = id;
             circulosSeleccionado = circulo;
-            circulosSeleccionado.setFill(Color.web("#f97316"));
+            circulosSeleccionado.setFill(Color.web("#806025"));
             return;
         }
 
@@ -98,8 +114,8 @@ public class GrafoPane extends Pane {
 
         Integer peso = solicitarPeso(origen, destino);
 
-        if (peso != null) {
-            dibujarConexion(origen, destino, peso);
+        if (peso != null && alCrearConexion != null) {
+            alCrearConexion.ejecutar(origen, destino, peso);
         }
 
         limpiarSeleccion();
@@ -165,7 +181,7 @@ public class GrafoPane extends Pane {
         }
     }
 
-    private void dibujarConexion(int origen, int destino, int peso) {
+    public void dibujarConexion(int origen, int destino, int peso) {
         Group nodoOrigen = nodosVisuales.get(origen);
         Group nodoDestino = nodosVisuales.get(destino);
 
@@ -215,7 +231,7 @@ public class GrafoPane extends Pane {
                 + perpendicularY * desplazamiento;
 
         Line linea = new Line(inicioX, inicioY, finX, finY);
-        linea.setStroke(Color.web("#334155"));
+        linea.setStroke(Color.web("#d4af60"));
         linea.setStrokeWidth(2);
 
         // Triángulo cuya punta termina en el nodo destino.
@@ -233,11 +249,11 @@ public class GrafoPane extends Pane {
                 finY - uy * largoFlecha
                         - perpendicularY * medioAnchoFlecha
         );
-        flecha.setFill(Color.web("#334155"));
+        flecha.setFill(Color.web("#d4af60"));
 
         Text etiquetaPeso = new Text(String.valueOf(peso));
         etiquetaPeso.setFont(Font.font(14));
-        etiquetaPeso.setFill(Color.web("#0f172a"));
+        etiquetaPeso.setFill(Color.web("#f0d99e"));
         etiquetaPeso.setTextOrigin(VPos.CENTER);
 
         double centroX = (inicioX + finX) / 2;
@@ -264,6 +280,28 @@ public class GrafoPane extends Pane {
 
         // Dibujar las conexiones detrás de los nodos.
         getChildren().add(0, conexion);
+    }
+
+    public boolean hayEspacioParaConexion(int origen, int destino) {
+        Group nodoOrigen = nodosVisuales.get(origen);
+        Group nodoDestino = nodosVisuales.get(destino);
+
+        if (nodoOrigen == null || nodoDestino == null) {
+            return false;
+        }
+
+        double dx = nodoDestino.getLayoutX() - nodoOrigen.getLayoutX();
+        double dy = nodoDestino.getLayoutY() - nodoOrigen.getLayoutY();
+
+        return Math.hypot(dx, dy) > RADIO * 2 + 15;
+    }
+
+    private void aplicarTema(javafx.scene.control.Dialog<?> dialogo) {
+        String css = java.util.Objects.requireNonNull(
+                getClass().getResource("/com/proyectografo/styles/app.css")
+        ).toExternalForm();
+
+        dialogo.getDialogPane().getStylesheets().add(css);
     }
 
 }

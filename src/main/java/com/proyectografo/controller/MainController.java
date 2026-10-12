@@ -9,6 +9,7 @@ import javafx.scene.control.Button;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import java.io.IOException;
+import javafx.scene.control.Label;
 
 public class MainController {
     //contenedor donde se muestra la vista seleccionada
@@ -49,13 +50,29 @@ public class MainController {
             event.consume();
             mostrarResultados();
         });
+        Label titulo = new Label("¿Cómo deseas trabajar?");
+        titulo.getStyleClass().add("titulo-seccion");
+
+        Label descripcion = new Label(
+                "Crea un grafo desde una matriz o dibújalo para analizarlo."
+        );
+        descripcion.getStyleClass().add("descripcion");
+        descripcion.setWrapText(true);
+
+        botonMatriz.getStyleClass().add("boton-opcion");
+        botonDibujo.getStyleClass().add("boton-opcion");
+        botonResultados.getStyleClass().add("boton-opcion");
+
         VBox opciones = new VBox(
-                12,
+                titulo,
+                descripcion,
                 botonMatriz,
                 botonDibujo,
                 botonResultados
         );
-        opciones.setStyle("-fx-padding: 20;");
+
+        opciones.getStyleClass().add("menu-inicio");
+
         contenido.getChildren().setAll(opciones);
     }
 
@@ -126,5 +143,10 @@ public class MainController {
         alerta.setHeaderText(mensaje);
         alerta.setContentText(error.getMessage());
         alerta.showAndWait();
+    }
+
+    @FXML
+    private void volverAlMenu() {
+        mostrarOpcionesInicio();
     }
 }
