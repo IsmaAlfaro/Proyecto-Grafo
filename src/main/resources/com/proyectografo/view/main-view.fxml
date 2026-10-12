@@ -2,12 +2,32 @@
 
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Label?>
-<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.StackPane?>
 
-<VBox alignment="CENTER" spacing="12.0" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1">
-    <padding>
-        <Insets bottom="32.0" left="32.0" right="32.0" top="32.0" />
-    </padding>
-    <Label styleClass="title" text="Proyecto de Grafos" />
-    <Label text="La aplicación JavaFX está lista para comenzar." />
-</VBox>
+<BorderPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.proyectografo.controller.MainController"
+            prefWidth="800.0"
+            prefHeight="600.0">
+
+    <top>
+        <Label text="Proyecto de Grafos"
+               styleClass="title"
+               style="-fx-font-size: 24px; -fx-font-weight: bold;"
+               BorderPane.alignment="CENTER">
+            <BorderPane.margin>
+                <Insets top="24.0" right="24.0" bottom="12.0" left="24.0"/>
+            </BorderPane.margin>
+        </Label>
+    </top>
+
+    <center>
+        <StackPane fx:id="contenido">
+            <BorderPane.margin>
+                <Insets top="12.0" right="32.0" bottom="32.0" left="32.0"/>
+            </BorderPane.margin>
+        </StackPane>
+    </center>
+
+</BorderPane>
