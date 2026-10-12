@@ -1,6 +1,7 @@
 package com.proyectografo.view;
 
 import javafx.geometry.VPos;
+import javafx.geometry.Point2D;
 import javafx.scene.Group;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
@@ -16,6 +17,7 @@ import javafx.scene.shape.Polygon;
 import java.util.HashMap;
 import java.util.Map;
 import com.proyectografo.model.Grafo;
+import com.proyectografo.util.Tema;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.MenuItem;
 import java.util.function.BiConsumer;
@@ -175,6 +177,7 @@ public class GrafoPane extends Pane {
 
     private Integer solicitarPeso(int origen, int destino) {
         TextInputDialog dialogo = new TextInputDialog();
+        Tema.aplicar(dialogo);
 
         dialogo.setTitle("Peso de la conexión");
         dialogo.setHeaderText(
@@ -201,6 +204,7 @@ public class GrafoPane extends Pane {
             }
 
             Alert error = new Alert(Alert.AlertType.ERROR);
+            Tema.aplicar(error);
             error.setTitle("Peso inválido");
             error.setHeaderText("Ingresa un número entero mayor que cero");
             error.setContentText(
@@ -227,6 +231,7 @@ public class GrafoPane extends Pane {
         // Necesitamos espacio entre los nodos para mostrar la flecha.
         if (distancia <= RADIO * 2 + 15) {
             Alert aviso = new Alert(Alert.AlertType.WARNING);
+            Tema.aplicar(aviso);
             aviso.setTitle("Nodos demasiado cerca");
             aviso.setHeaderText("No hay espacio para dibujar la flecha");
             aviso.setContentText(
@@ -366,15 +371,26 @@ public class GrafoPane extends Pane {
         return Math.hypot(dx, dy) > RADIO * 2 + 15;
     }
 
-    private void aplicarTema(javafx.scene.control.Dialog<?> dialogo) {
-        String css = java.util.Objects.requireNonNull(
-                getClass().getResource("/com/proyectografo/styles/app.css")
-        ).toExternalForm();
-
-        dialogo.getDialogPane().getStylesheets().add(css);
+    public void mostrarGrafo(Grafo grafo) {
+        mostrarGrafo(grafo, guardarPosiciones(-1));
     }
 
-    public void mostrarGrafo(Grafo grafo) {
+    public void mostrarTrasEliminarNodo(Grafo grafo, int eliminado) {
+        mostrarGrafo(grafo, guardarPosiciones(eliminado));
+    }
+
+    private Map<Integer, Point2D> guardarPosiciones(int eliminado) {
+        Map<Integer, Point2D> posiciones = new HashMap<>();
+        nodosVisuales.forEach((id, nodo) -> {
+            if (id != eliminado) {
+                int nuevoId = eliminado >= 0 && id > eliminado ? id - 1 : id;
+                posiciones.put(nuevoId, new Point2D(nodo.getLayoutX(), nodo.getLayoutY()));
+            }
+        });
+        return posiciones;
+    }
+
+    private void mostrarGrafo(Grafo grafo, Map<Integer, Point2D> posiciones) {
         // Limpiar solo la representación visual.
         limpiar();
 
@@ -386,7 +402,9 @@ public class GrafoPane extends Pane {
             return;
         }
 
-        // Distribución circular con espacio suficiente entre nodos.
+        posiciones.keySet().retainAll(grafo.getNodos());
+
+        // La distribución automática se usa solo para nodos sin posición previa.
         double radioDistribucion = cantidad <= 1
                 ? 0
                 : Math.max(150, 50 / Math.sin(Math.PI / cantidad));
@@ -394,19 +412,38 @@ public class GrafoPane extends Pane {
         double margen = 70;
         double lado = Math.max(400, 2 * (radioDistribucion + margen));
 
-        setMinSize(lado, lado);
-        setPrefSize(lado, lado);
-
         double centro = lado / 2;
 
         for (int id : grafo.getNodos()) {
+            if (posiciones.containsKey(id)) {
+                continue;
+            }
             double angulo = -Math.PI / 2
                     + (2 * Math.PI * id / cantidad);
 
             double x = centro + radioDistribucion * Math.cos(angulo);
             double y = centro + radioDistribucion * Math.sin(angulo);
 
-            agregarNodo(id, x, y);
+            Point2D posicion = new Point2D(x, y);
+            // Un nodo nuevo no debe superponerse con los que ya estaban dibujados.
+            while (posicionOcupada(posicion, posiciones)) {
+                posicion = posicion.add(100, 0);
+            }
+            posiciones.put(id, posicion);
+        }
+
+        double ancho = 400;
+        double alto = 400;
+        for (Point2D posicion : posiciones.values()) {
+            ancho = Math.max(ancho, posicion.getX() + margen);
+            alto = Math.max(alto, posicion.getY() + margen);
+        }
+        setMinSize(ancho, alto);
+        setPrefSize(ancho, alto);
+
+        for (int id : grafo.getNodos()) {
+            Point2D posicion = posiciones.get(id);
+            agregarNodo(id, posicion.getX(), posicion.getY());
         }
 
         // Primero deben existir todos los nodos visuales.
@@ -419,6 +456,10 @@ public class GrafoPane extends Pane {
                 );
             }
         }
+    }
+
+    private boolean posicionOcupada(Point2D candidata, Map<Integer, Point2D> posiciones) {
+        return posiciones.values().stream().anyMatch(posicion -> posicion.distance(candidata) < 80);
     }
 
     public void eliminarConexionVisual(int origen, int destino) {

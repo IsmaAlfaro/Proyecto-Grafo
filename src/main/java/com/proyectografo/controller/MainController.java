@@ -1,6 +1,7 @@
 package com.proyectografo.controller;
 
 import com.proyectografo.model.Grafo;
+import com.proyectografo.util.Tema;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -21,6 +22,11 @@ public class MainController {
 
     //se conserva para actualizar la vista de resultados cuando cambia el grafo
     private ResultadosController resultadosController;
+
+    private MatrizController matrizController;
+    // Se conserva el editor para mantener las posiciones al cambiar de pantalla.
+    private GrafoController grafoController;
+    private Parent vistaGrafo;
 
     //observador que actualiza los resultados al cambiar el modelo
     private final Runnable observadorGrafo = this::sincronizarVistas;
@@ -68,32 +74,39 @@ public class MainController {
 
         opciones.getStyleClass().add("menu-inicio");
 
-        contenido.getChildren().setAll(opciones);
+        cambiarVista(opciones);
     }
 
     //carga la vista de matriz y le entrega el grafo compartido
     @FXML
     private void mostrarOpcionMatriz() {
+        MatrizController controladorMatriz = null;
         try {
             FXMLLoader loader = new FXMLLoader(
                     getClass().getResource("/com/proyectografo/view/matriz-view.fxml")
             );
             Parent vista = loader.load();
-            MatrizController controladorMatriz = loader.getController();
+            controladorMatriz = loader.getController();
             controladorMatriz.setGrafo(grafo);
 
             //permite que la matriz solicite abrir el editor visual
             controladorMatriz.setAlSolicitarDibujo(this::mostrarOpcionDibujo);
-            contenido.getChildren().setAll(vista);
+            cambiarVista(vista);
+            matrizController = controladorMatriz;
         } catch (IOException | RuntimeException e) {
+            if (controladorMatriz != null) {
+                controladorMatriz.liberar();
+            }
             mostrarError("No se pudo cargar la vista de matriz.", e);
         }
     }
 
     //recibe el modelo enviado por MatrizController y abre el editor visual
     private void mostrarOpcionDibujo(Grafo grafoRecibido) {
-        if (grafoRecibido != null) {
+        if (grafoRecibido != null && grafoRecibido != grafo) {
+            grafo.eliminarObservador(observadorGrafo);
             grafo = grafoRecibido;
+            grafo.agregarObservador(observadorGrafo);
         }
         mostrarOpcionDibujo();
     }
@@ -102,25 +115,18 @@ public class MainController {
     @FXML
     private void mostrarOpcionDibujo() {
         try {
-            FXMLLoader loader = new FXMLLoader(
-                    getClass().getResource(
-                            "/com/proyectografo/view/grafo-view.fxml"
-                    )
-            );
+            if (vistaGrafo == null) {
+                FXMLLoader loader = new FXMLLoader(
+                        getClass().getResource("/com/proyectografo/view/grafo-view.fxml")
+                );
+                vistaGrafo = loader.load();
+                grafoController = loader.getController();
+                grafoController.setAlSolicitarMatriz(this::mostrarOpcionMatriz);
+            }
 
-            Parent vista = loader.load();
-
-            GrafoController controladorGrafo = loader.getController();
-
-            // El editor recibe el mismo modelo que utiliza la matriz.
-            controladorGrafo.setGrafo(grafo);
-
-            // El editor puede pedir que se abra la matriz.
-            controladorGrafo.setAlSolicitarMatriz(
-                    this::mostrarOpcionMatriz
-            );
-
-            contenido.getChildren().setAll(vista);
+            // Actualiza los datos conservando las posiciones del mismo modelo.
+            grafoController.setGrafo(grafo);
+            cambiarVista(vistaGrafo);
 
         } catch (IOException | RuntimeException e) {
             mostrarError("No se pudo cargar la vista del grafo.", e);
@@ -133,12 +139,22 @@ public class MainController {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/proyectografo/view/resultados-view.fxml"));
             Parent vista = loader.load();
-            resultadosController = loader.getController();
-            resultadosController.setGrafo(grafo);
-            contenido.getChildren().setAll(vista);
+            ResultadosController controlador = loader.getController();
+            controlador.setGrafo(grafo);
+            cambiarVista(vista);
+            resultadosController = controlador;
         } catch (IOException | RuntimeException e) {
             mostrarError("No se pudo cargar la vista de resultados.", e);
         }
+    }
+
+    private void cambiarVista(Parent vista) {
+        if (matrizController != null) {
+            matrizController.liberar();
+            matrizController = null;
+        }
+        resultadosController = null;
+        contenido.getChildren().setAll(vista);
     }
 
     //refresca resultados cuando el modelo notifica un cambio
@@ -151,6 +167,7 @@ public class MainController {
     //muestra un mensaje si no se pudo cargar una vista
     private void mostrarError(String mensaje, Exception error) {
         Alert alerta = new Alert(Alert.AlertType.ERROR);
+        Tema.aplicar(alerta);
         alerta.setTitle("Error");
         alerta.setHeaderText(mensaje);
         alerta.setContentText(error.getMessage());

@@ -1,6 +1,7 @@
 package com.proyectografo.controller;
 
 import com.proyectografo.model.Grafo;
+import com.proyectografo.util.Tema;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
@@ -70,6 +71,7 @@ public class MatrizController {
     // Puede llamarse cuando se cierra definitivamente esta vista.
     public void liberar() {
         grafo.eliminarObservador(observador);
+        vistaPreparada = false;
     }
 
     @FXML
@@ -303,7 +305,7 @@ public class MatrizController {
 
         } else {
             Platform.runLater(() -> {
-                if (!actualizandoVista) {
+                if (vistaPreparada && !actualizandoVista) {
                     mostrarMatriz();
                 }
             });
@@ -312,6 +314,7 @@ public class MatrizController {
 
     private void mostrarError(String mensaje) {
         Alert alerta = new Alert(Alert.AlertType.ERROR);
+        Tema.aplicar(alerta);
 
         alerta.setTitle("Datos inválidos");
         alerta.setHeaderText(null);

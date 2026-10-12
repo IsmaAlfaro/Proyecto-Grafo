@@ -1,6 +1,7 @@
 package com.proyectografo.controller;
 
 import com.proyectografo.model.Grafo;
+import com.proyectografo.util.Tema;
 import com.proyectografo.view.GrafoPane;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
@@ -15,8 +16,7 @@ public class GrafoController {
     @FXML
     private Label cantidadNodosLabel;
 
-    // Modelo utilizado por el editor.
-    // En la integración recibiremos el compartido por MainController.
+    // MainController entrega el mismo modelo que utilizan matriz y resultados.
     private Grafo grafo = new Grafo();
 
     private Runnable alSolicitarMatriz;
@@ -76,6 +76,7 @@ public class GrafoController {
     private void crearConexion(int origen, int destino, int peso) {
         if (!grafoPane.hayEspacioParaConexion(origen, destino)) {
             Alert aviso = new Alert(Alert.AlertType.WARNING);
+            Tema.aplicar(aviso);
             aviso.setTitle("Nodos demasiado cerca");
             aviso.setHeaderText("No hay espacio para dibujar la flecha");
             aviso.setContentText("Prueba con dos nodos más separados.");
@@ -92,6 +93,7 @@ public class GrafoController {
 
         } catch (IllegalArgumentException e) {
             Alert error = new Alert(Alert.AlertType.ERROR);
+            Tema.aplicar(error);
             error.setTitle("No se pudo crear la conexión");
             error.setHeaderText(null);
             error.setContentText(e.getMessage());
@@ -106,6 +108,9 @@ public class GrafoController {
             );
         }
 
+        if (grafo != grafoCompartido) {
+            grafoPane.limpiar();
+        }
         grafo = grafoCompartido;
         grafoPane.mostrarGrafo(grafo);
         actualizarCantidadNodos();
@@ -126,12 +131,13 @@ public class GrafoController {
         try {
             grafo.eliminarNodo(nodo);
 
-            // Reconstruye los nodos y sus eventos con los nuevos identificadores.
-            grafoPane.mostrarGrafo(grafo);
+            // Renumera los nodos conservando las posiciones de los restantes.
+            grafoPane.mostrarTrasEliminarNodo(grafo, nodo);
             actualizarCantidadNodos();
 
         } catch (IllegalArgumentException e) {
             Alert error = new Alert(Alert.AlertType.ERROR);
+            Tema.aplicar(error);
             error.setTitle("No se pudo eliminar el nodo");
             error.setHeaderText(null);
             error.setContentText(e.getMessage());
@@ -149,6 +155,7 @@ public class GrafoController {
 
         } catch (IllegalArgumentException e) {
             Alert error = new Alert(Alert.AlertType.ERROR);
+            Tema.aplicar(error);
             error.setTitle("No se pudo eliminar la conexión");
             error.setHeaderText(null);
             error.setContentText(e.getMessage());
