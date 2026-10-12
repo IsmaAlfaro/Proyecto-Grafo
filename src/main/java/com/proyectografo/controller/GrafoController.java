@@ -19,11 +19,17 @@ public class GrafoController {
     // En la integración recibiremos el compartido por MainController.
     private Grafo grafo = new Grafo();
 
+    private Runnable alSolicitarMatriz;
+
+
+
     @FXML
     private void initialize() {
         actualizarCantidadNodos();
 
         grafoPane.setAlCrearConexion(this::crearConexion);
+        grafoPane.setAlEliminarConexion(this::eliminarConexion);
+        grafoPane.setAlEliminarNodo(this::eliminarNodo);
 
         grafoPane.setOnMouseClicked(event -> {
             boolean clicIzquierdo =
@@ -87,6 +93,63 @@ public class GrafoController {
         } catch (IllegalArgumentException e) {
             Alert error = new Alert(Alert.AlertType.ERROR);
             error.setTitle("No se pudo crear la conexión");
+            error.setHeaderText(null);
+            error.setContentText(e.getMessage());
+            error.showAndWait();
+        }
+    }
+
+    public void setGrafo(Grafo grafoCompartido) {
+        if (grafoCompartido == null) {
+            throw new IllegalArgumentException(
+                    "El grafo compartido no puede ser null."
+            );
+        }
+
+        grafo = grafoCompartido;
+        grafoPane.mostrarGrafo(grafo);
+        actualizarCantidadNodos();
+    }
+
+    public void setAlSolicitarMatriz(Runnable accion) {
+        alSolicitarMatriz = accion;
+    }
+
+    @FXML
+    private void mostrarMatriz() {
+        if (alSolicitarMatriz != null) {
+            alSolicitarMatriz.run();
+        }
+    }
+
+    private void eliminarNodo(int nodo) {
+        try {
+            grafo.eliminarNodo(nodo);
+
+            // Reconstruye los nodos y sus eventos con los nuevos identificadores.
+            grafoPane.mostrarGrafo(grafo);
+            actualizarCantidadNodos();
+
+        } catch (IllegalArgumentException e) {
+            Alert error = new Alert(Alert.AlertType.ERROR);
+            error.setTitle("No se pudo eliminar el nodo");
+            error.setHeaderText(null);
+            error.setContentText(e.getMessage());
+            error.showAndWait();
+        }
+    }
+
+    private void eliminarConexion(int origen, int destino) {
+        try {
+            // Primero modificar los datos.
+            grafo.eliminarConexion(origen, destino);
+
+            // Después quitar la representación visual.
+            grafoPane.eliminarConexionVisual(origen, destino);
+
+        } catch (IllegalArgumentException e) {
+            Alert error = new Alert(Alert.AlertType.ERROR);
+            error.setTitle("No se pudo eliminar la conexión");
             error.setHeaderText(null);
             error.setContentText(e.getMessage());
             error.showAndWait();

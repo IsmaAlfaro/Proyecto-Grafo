@@ -59,6 +59,34 @@ public class Grafo {
         return cantidadActual;
     }
 
+    // Quita la fila y columna del nodo; los identificadores restantes se renumeran.
+    public void eliminarNodo(int nodo) {
+        validarNodo(nodo);
+
+        int[][] nueva = new int[matriz.length - 1][matriz.length - 1];
+        int nuevaFila = 0;
+
+        for (int fila = 0; fila < matriz.length; fila++) {
+            if (fila == nodo) {
+                continue;
+            }
+
+            int nuevaColumna = 0;
+            for (int columna = 0; columna < matriz.length; columna++) {
+                if (columna == nodo) {
+                    continue;
+                }
+
+                nueva[nuevaFila][nuevaColumna] = matriz[fila][columna];
+                nuevaColumna++;
+            }
+            nuevaFila++;
+        }
+
+        matriz = nueva;
+        notificarCambio();
+    }
+
     public void crearConexion(int origen, int destino, int peso) {
         validarConexion(origen, destino, peso);
 

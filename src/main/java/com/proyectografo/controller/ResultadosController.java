@@ -7,14 +7,16 @@ import javafx.scene.control.ComboBox; //importa el menú desplegable donde se el
 import javafx.scene.control.Label; //importa la etiqueta donde se muestra el resultado de BFS o DFS y los mensajes
 import javafx.scene.control.TextArea; //importa el área de texto que presenta la lista de adyacencia
 import java.util.List; //interfaz List, utilizada para guardar los nodos vecinos y el orden del recorrido
+import javafx.util.StringConverter;
 
 public class ResultadosController {
-    //selector del nodo desde el que iniciará BFS o DFS
-    @FXML
-    private ComboBox<Integer> nodoInicialCombo;
 
-    //area donde se muestra la lista de adyacencia con los pesos
-    @FXML
+//selector del nodo desde el que iniciará BFS o DFS
+@FXML
+private ComboBox<Integer> nodoInicialCombo;
+
+//area donde se muestra la lista de adyacencia con los pesos
+@FXML
 private TextArea listaAdyacenciaArea;
 
 //etiqueta donde se presenta el resultado del recorrido
@@ -27,6 +29,21 @@ private Grafo grafo;
 //servicio que implementa los recorridos BFS y DFS
 private final RecorridosService recorridosService =
         new RecorridosService();
+
+@FXML
+private void initialize() {
+        nodoInicialCombo.setConverter(new StringConverter<Integer>() {
+            @Override
+            public String toString(Integer nodo) {
+                return nodo == null ? "" : String.valueOf(nodo + 1);
+            }
+
+            @Override
+            public Integer fromString(String texto) {
+                return Integer.parseInt(texto.trim()) - 1;
+            }
+        });
+    }
 
 //recibe el grafo que debe mostrar esta vista
 public void setGrafo(Grafo grafo) {
@@ -53,7 +70,7 @@ public void mostrarListaAdyacencia() {
     StringBuilder texto = new StringBuilder();
     //recorre los nodos en el orden que entrega el modelo.
     for (int nodo : grafo.getNodos()) {
-        texto.append(nodo).append(" → ");
+        texto.append(nodo + 1).append(" → ");
         List<Integer> vecinos = grafo.getVecinos(nodo);
         if (vecinos.isEmpty()) {
             texto.append("(sin conexiones)");
@@ -61,7 +78,7 @@ public void mostrarListaAdyacencia() {
             //muestra cada vecino y el peso de la conexión dirigida
             for (int vecino : vecinos) {
                 int peso = grafo.getPeso(nodo, vecino);
-                texto.append(vecino).append(" (peso ").append(peso).append("), ");
+                texto.append(vecino + 1).append(" (peso ").append(peso).append("), ");
             }
             //quita la coma y el espacio que quedaron al final
             texto.setLength(texto.length() - 2);
@@ -110,7 +127,7 @@ private void ejecutarDFS() {
 private String formatearRecorrido(List<Integer> orden) {
     StringBuilder texto = new StringBuilder();
     for (int i = 0; i < orden.size(); i++) {
-        texto.append(orden.get(i));
+        texto.append(orden.get(i) + 1);
         //agrega la flecha entre nodos, pero no después del último
         if (i < orden.size() - 1) {
             texto.append(" → ");

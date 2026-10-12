@@ -15,6 +15,11 @@ import javafx.scene.shape.Line;
 import javafx.scene.shape.Polygon;
 import java.util.HashMap;
 import java.util.Map;
+import com.proyectografo.model.Grafo;
+import javafx.scene.control.ContextMenu;
+import javafx.scene.control.MenuItem;
+import java.util.function.BiConsumer;
+import java.util.function.IntConsumer;
 
 
 
@@ -26,6 +31,8 @@ public class GrafoPane extends Pane {
     private Integer nodoSeleccionado;
     private final Map<Integer, Group> nodosVisuales = new HashMap<>();
     private final Map<String, Group> conexionesVisuales = new HashMap<>();
+    private BiConsumer <Integer, Integer> alEliminarConexion;
+    private IntConsumer alEliminarNodo;
 
     @FunctionalInterface
     public interface AlCrearConexion{
@@ -34,8 +41,16 @@ public class GrafoPane extends Pane {
 
     private AlCrearConexion alCrearConexion;
 
+    public void setAlEliminarConexion(BiConsumer <Integer, Integer> accion) {
+        alEliminarConexion = accion;
+    }
+
     public void setAlCrearConexion(AlCrearConexion accion) {
         alCrearConexion = accion;
+    }
+
+    public void setAlEliminarNodo(IntConsumer accion) {
+        alEliminarNodo = accion;
     }
 
     public GrafoPane() {
@@ -52,14 +67,17 @@ public class GrafoPane extends Pane {
         siguienteId = Math.max(siguienteId, id + 1);
 
         // Mantener el nodo dentro del área de dibujo.
+        double anchoDisponible = Math.max(getWidth(), getMinWidth());
+        double altoDisponible = Math.max(getHeight(), getMinHeight());
+
         double posicionX = Math.max(
                 RADIO,
-                Math.min(x, getWidth() - RADIO)
+                Math.min(x, anchoDisponible - RADIO)
         );
 
         double posicionY = Math.max(
                 RADIO,
-                Math.min(y, getHeight() - RADIO)
+                Math.min(y, altoDisponible - RADIO)
         );
 
         Circle circulo = new Circle(RADIO);
@@ -79,11 +97,23 @@ public class GrafoPane extends Pane {
         nodo.setLayoutX(posicionX);
         nodo.setLayoutY(posicionY);
 
-        nodo.setOnMouseClicked (event-> {
-            if (event.getButton()==MouseButton.PRIMARY) {
+        MenuItem eliminarNodo = new MenuItem("Eliminar nodo");
+        ContextMenu menuNodo = new ContextMenu(eliminarNodo);
+
+        eliminarNodo.setOnAction(event -> {
+            menuNodo.hide();
+            if (alEliminarNodo != null) {
+                alEliminarNodo.accept(id);
+            }
+        });
+
+        nodo.setOnMouseClicked(event -> {
+            if (event.getButton() == MouseButton.PRIMARY) {
                 seleccionarNodo(id, circulo);
+            } else if (event.getButton() == MouseButton.SECONDARY) {
+                menuNodo.show(nodo, event.getScreenX(), event.getScreenY());
+            }
             event.consume();
-        }
         });
 
         nodosVisuales.put(id, nodo);
@@ -123,7 +153,7 @@ public class GrafoPane extends Pane {
 
     private void limpiarSeleccion() {
         if (circulosSeleccionado != null) {
-            circulosSeleccionado.setFill(Color.web("#2563eb"));
+            circulosSeleccionado.setFill(Color.web("#343943"));
         }
 
         circulosSeleccionado = null;
@@ -267,8 +297,49 @@ public class GrafoPane extends Pane {
 
         Group conexion = new Group(linea, flecha, etiquetaPeso);
 
-        // Por ahora, pulsar una conexión no ejecuta ninguna acción.
-        conexion.setOnMouseClicked(event -> event.consume());
+        // Facilita pulsar la línea sin cambiar su apariencia.
+        Line zonaClic = new Line(inicioX, inicioY, finX, finY);
+        zonaClic.setStroke(Color.TRANSPARENT);
+        zonaClic.setStrokeWidth(14);
+        conexion.getChildren().add(0, zonaClic);
+
+        MenuItem modificar = new MenuItem("Modificar peso");
+        MenuItem eliminar = new MenuItem("Eliminar conexión");
+
+        ContextMenu menu = new ContextMenu(modificar, eliminar);
+
+        modificar.setOnAction(event -> {
+            menu.hide();
+            limpiarSeleccion();
+
+            Integer nuevoPeso = solicitarPeso(origen, destino);
+
+            if (nuevoPeso != null && alCrearConexion != null) {
+                // El controlador actualiza el modelo y redibuja la conexión.
+                alCrearConexion.ejecutar(origen, destino, nuevoPeso);
+            }
+        });
+
+        eliminar.setOnAction(event -> {
+            menu.hide();
+            limpiarSeleccion();
+
+            if (alEliminarConexion != null) {
+                alEliminarConexion.accept(origen, destino);
+            }
+        });
+
+        conexion.setOnMouseClicked(event -> {
+            if (event.getButton() == MouseButton.SECONDARY) {
+                menu.show(
+                        conexion,
+                        event.getScreenX(),
+                        event.getScreenY()
+                );
+            }
+
+            event.consume();
+        });
 
         String clave = origen + "->" + destino;
 
@@ -278,7 +349,6 @@ public class GrafoPane extends Pane {
             getChildren().remove(conexionAnterior);
         }
 
-        // Dibujar las conexiones detrás de los nodos.
         getChildren().add(0, conexion);
     }
 
@@ -302,6 +372,65 @@ public class GrafoPane extends Pane {
         ).toExternalForm();
 
         dialogo.getDialogPane().getStylesheets().add(css);
+    }
+
+    public void mostrarGrafo(Grafo grafo) {
+        // Limpiar solo la representación visual.
+        limpiar();
+
+        int cantidad = grafo.getCantidadNodos();
+
+        if (cantidad == 0) {
+            setMinSize(300, 250);
+            setPrefSize(900, 520);
+            return;
+        }
+
+        // Distribución circular con espacio suficiente entre nodos.
+        double radioDistribucion = cantidad <= 1
+                ? 0
+                : Math.max(150, 50 / Math.sin(Math.PI / cantidad));
+
+        double margen = 70;
+        double lado = Math.max(400, 2 * (radioDistribucion + margen));
+
+        setMinSize(lado, lado);
+        setPrefSize(lado, lado);
+
+        double centro = lado / 2;
+
+        for (int id : grafo.getNodos()) {
+            double angulo = -Math.PI / 2
+                    + (2 * Math.PI * id / cantidad);
+
+            double x = centro + radioDistribucion * Math.cos(angulo);
+            double y = centro + radioDistribucion * Math.sin(angulo);
+
+            agregarNodo(id, x, y);
+        }
+
+        // Primero deben existir todos los nodos visuales.
+        for (int origen : grafo.getNodos()) {
+            for (int destino : grafo.getVecinos(origen)) {
+                dibujarConexion(
+                        origen,
+                        destino,
+                        grafo.getPeso(origen, destino)
+                );
+            }
+        }
+    }
+
+    public void eliminarConexionVisual(int origen, int destino) {
+        String clave = origen + "->" + destino;
+
+        Group conexion = conexionesVisuales.remove(clave);
+
+        if (conexion != null) {
+            getChildren().remove(conexion);
+        }
+
+        limpiarSeleccion();
     }
 
 }

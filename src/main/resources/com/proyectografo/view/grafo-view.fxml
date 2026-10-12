@@ -7,6 +7,7 @@
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
+<?import javafx.scene.control.ScrollPane?>
 
 <BorderPane xmlns="http://javafx.com/javafx/26"
             xmlns:fx="http://javafx.com/fxml/1"
@@ -29,6 +30,8 @@
             <HBox spacing="20" alignment="CENTER_LEFT">
                 <Button text="Limpiar grafo"
                         onAction="#limpiarGrafo"/>
+                <Button text="Mostrar matriz"
+                        onAction="#mostrarMatriz"/>
 
                 <Label fx:id="cantidadNodosLabel"
                        text="Nodos: 0"/>
@@ -37,7 +40,12 @@
     </top>
 
     <center>
-        <GrafoPane fx:id="grafoPane"/>
+        <ScrollPane fitToWidth="true"
+                    fitToHeight="true">
+            <content>
+                <GrafoPane fx:id="grafoPane"/>
+            </content>
+        </ScrollPane>
     </center>
 
     <bottom>

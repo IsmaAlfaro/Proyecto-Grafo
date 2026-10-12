@@ -40,35 +40,30 @@ public class MainController {
             event.consume();
             mostrarOpcionMatriz();
         });
-        Button botonDibujo = new Button("Editor visual del grafo");
+
+        Button botonDibujo = new Button("Dibujo → matriz");
         botonDibujo.setOnAction(event -> {
             event.consume();
             mostrarOpcionDibujo();
         });
-        Button botonResultados = new Button("Lista y recorridos");
-        botonResultados.setOnAction(event -> {
-            event.consume();
-            mostrarResultados();
-        });
+
         Label titulo = new Label("¿Cómo deseas trabajar?");
         titulo.getStyleClass().add("titulo-seccion");
 
         Label descripcion = new Label(
-                "Crea un grafo desde una matriz o dibújalo para analizarlo."
+                "Crea un grafo desde una matriz o dibújalo para obtener su matriz."
         );
         descripcion.getStyleClass().add("descripcion");
         descripcion.setWrapText(true);
 
         botonMatriz.getStyleClass().add("boton-opcion");
         botonDibujo.getStyleClass().add("boton-opcion");
-        botonResultados.getStyleClass().add("boton-opcion");
 
         VBox opciones = new VBox(
                 titulo,
                 descripcion,
                 botonMatriz,
-                botonDibujo,
-                botonResultados
+                botonDibujo
         );
 
         opciones.getStyleClass().add("menu-inicio");
@@ -107,9 +102,26 @@ public class MainController {
     @FXML
     private void mostrarOpcionDibujo() {
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/proyectografo/view/grafo-view.fxml"));
+            FXMLLoader loader = new FXMLLoader(
+                    getClass().getResource(
+                            "/com/proyectografo/view/grafo-view.fxml"
+                    )
+            );
+
             Parent vista = loader.load();
+
+            GrafoController controladorGrafo = loader.getController();
+
+            // El editor recibe el mismo modelo que utiliza la matriz.
+            controladorGrafo.setGrafo(grafo);
+
+            // El editor puede pedir que se abra la matriz.
+            controladorGrafo.setAlSolicitarMatriz(
+                    this::mostrarOpcionMatriz
+            );
+
             contenido.getChildren().setAll(vista);
+
         } catch (IOException | RuntimeException e) {
             mostrarError("No se pudo cargar la vista del grafo.", e);
         }

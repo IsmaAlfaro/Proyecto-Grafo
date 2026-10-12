@@ -30,6 +30,10 @@
 
             <Region HBox.hgrow="ALWAYS"/>
 
+            <Button text="Lista y recorridos"
+                    onAction="#mostrarResultados"
+                    styleClass="boton-menu"/>
+
             <Button text="Menú principal"
                     onAction="#volverAlMenu"
                     styleClass="boton-menu"/>
